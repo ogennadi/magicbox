@@ -2,9 +2,10 @@ require 'csv'
 require 'rexml/document'
 
 usernames = Dir.entries('games') - ['.', '..']
-#usernames = ["Nafmi", "matt_k", "zefquaavius"]
 user_collections = {} # key: username, value: titles hash
-all_titles = {}
+all_titles = {} #key: game id, value: game name
+game_freq = {} # key: gamed id, value: ownership frequency
+game_freq.default = 0
 
 usernames.each do |username|
 	doc_name = "games/#{username}"
@@ -22,7 +23,10 @@ usernames.each do |username|
 	puts titles.length
 end
 
-CSV.open('results.csv', 'wb') do |csv|
+# Export user-games matrix
+output_file = "results/results-" + Time.now.to_i.to_s + ".csv"
+
+CSV.open(output_file, 'wb') do |csv|
 	csv << [""] + all_titles.values
 
 	usernames.each do |username|
@@ -30,6 +34,7 @@ CSV.open('results.csv', 'wb') do |csv|
 		all_titles.each do |id, name|
 			if user_collections[username][id]
 				row << 'X'
+        game_freq[id] += 1
 			else
 				row << ''
 			end
@@ -37,6 +42,9 @@ CSV.open('results.csv', 'wb') do |csv|
 
 		csv << row
 	end
+
+	csv << []	
+	csv << ["Total"] + game_freq.values
 end
 
-puts all_titles
+puts "Results written to " + output_file
