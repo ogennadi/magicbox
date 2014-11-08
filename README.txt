@@ -4,7 +4,7 @@ This program takes a list of boardgamegeek.com usernames and creates a CSV showi
 Requirements
 ============
 - Linux or OSX
-- Wget
+- Curl
 - Ruby 1.9
 
 
@@ -15,6 +15,6 @@ Usage
 - Create a file called "users.txt" with one username per line
 - Run this command
 
-ruby fetchAndAnalyse.rb
+ruby analysis.rb < users.txt
 
 - After a few minutes, you'll be notified that the output CSV has been created in the results directory
