@@ -17,6 +17,7 @@ def fetch(tmpdir)
 		puts username
 		command = "curl --silent --output #{tmpdir}/#{username} http://www.boardgamegeek.com/xmlapi/collection/#{username}?own=1"
 		`#{command}`
+		sleep(0.5)
 	end
 end
 
@@ -29,19 +30,23 @@ def generateCSV(tmpdir)
 
 	puts "Analyzing the collections:"
 	usernames.each do |username|
-		doc_name 	= "#{tmpdir}/#{username}"
-		xml_data 	= File.open(doc_name, 'rb').read
-		doc 		= REXML::Document.new(xml_data)
-		titles 		= {}  # key: game id, value: game name
-
-		doc.elements.each('items/item') do |element|
-			titles[element.attributes["objectid"]] = element.elements['name'].text
+		begin
+			doc_name 	= "#{tmpdir}/#{username}"
+			xml_data 	= File.open(doc_name, 'rb').read
+			doc 		= REXML::Document.new(xml_data)
+			titles 		= {}  # key: game id, value: game name
+	
+			doc.elements.each('items/item') do |element|
+				titles[element.attributes["objectid"]] = element.elements['name'].text
+			end
+	
+			user_collections[username] = titles
+			all_titles = all_titles.merge(titles)
+			puts "You might have to re-run the command" if titles.length == 0
+			print "."
+		rescue
+			abort "Invalid XML for user #{username}. Exiting."
 		end
-
-		user_collections[username] = titles
-		all_titles = all_titles.merge(titles)
-		puts "You might have to re-run the command" if titles.length == 0
-		print "."
 	end
 
 	# Export user-games matrix
