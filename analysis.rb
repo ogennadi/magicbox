@@ -4,46 +4,58 @@ require 'rexml/document'
 require 'tmpdir'
 
 def fetch(tmpdir)
-	users_file 	= "users.txt"
 	usernames 	= []
 
-	$stdin.each_line do |line|
+	ARGF.readlines.each do |line|
 		usernames << line.strip
 	end
 
-	puts "Fetching #{usernames.length} user collections:"
+	puts "Fetching #{usernames.length} user collections to #{tmpdir}:"
 
-	usernames.each do |username|
-		puts username
-		command = "curl --silent --output #{tmpdir}/#{username} http://www.boardgamegeek.com/xmlapi/collection/#{username}?own=1"
-		`#{command}`
-		sleep(0.5)
-	end
+	return usernames
 end
 
-def generateCSV(tmpdir)
-	usernames 			= Dir.entries(tmpdir) - ['.', '..']
+class EmptyFileException < RuntimeError
+end
+
+def generateCSV(tmpdir, usernames)
 	user_collections 	= {} # key: username, value: titles hash
 	all_titles 			= {} # key: game id, value: game name
 	game_freq 			= {} # key: gamed id, value: ownership frequency
 	game_freq.default 	= 0
 
 	puts "Analyzing the collections:"
-	usernames.each do |username|
+		usernames.each do |username|
 		begin
+		 	puts username
+		 	command = "curl --silent --output #{tmpdir}/#{username} http://www.boardgamegeek.com/xmlapi/collection/#{username}?own=1"
+			`#{command}`
+ 			sleep(0.5)
+
 			doc_name 	= "#{tmpdir}/#{username}"
 			xml_data 	= File.open(doc_name, 'rb').read
-			doc 		= REXML::Document.new(xml_data)
+			doc 			= REXML::Document.new(xml_data)
 			titles 		= {}  # key: game id, value: game name
-	
+
 			doc.elements.each('items/item') do |element|
 				titles[element.attributes["objectid"]] = element.elements['name'].text
 			end
-	
+
 			user_collections[username] = titles
 			all_titles = all_titles.merge(titles)
-			puts "You might have to re-run the command" if titles.length == 0
-			print "."
+			raise EmptyFileException if titles.length == 0
+
+		rescue EmptyFileException
+			puts "\nNo titles found for #{username}. Here's what was downloaded\n\n"
+			puts xml_data
+			puts
+			puts "Press 'enter' to retry downloading the collection. Press 's' to skip this user.\n"
+
+			if gets.strip.downcase == "s"
+				next
+			else
+				retry
+			end
 		rescue
 			abort "Invalid XML for user #{username}. Exiting."
 		end
@@ -69,7 +81,7 @@ def generateCSV(tmpdir)
 			csv << row
 		end
 
-		csv << []	
+		csv << []
 		csv << ["Total"] + game_freq.values
 	end
 
@@ -78,6 +90,6 @@ def generateCSV(tmpdir)
 end
 
 tmpdir = Dir.mktmpdir
-fetch(tmpdir)
+usernames = fetch(tmpdir)
 puts
-generateCSV(tmpdir)
+generateCSV(tmpdir, usernames)
