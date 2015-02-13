@@ -49,9 +49,9 @@ def generateCSV(tmpdir, usernames)
 			puts "\nNo titles found for #{username}. Here's what was downloaded\n\n"
 			puts xml_data
 			puts
-			puts "Press 'enter' to retry downloading the collection. Press 's' to skip this user.\n"
+			puts "Press 'enter' to retry downloading the collection. Press 'c' then 'enter' to continue.\n"
 
-			if gets.strip.downcase == "s"
+			if gets.strip.downcase == "c"
 				next
 			else
 				retry
