@@ -28,7 +28,7 @@ def generateCSV(tmpdir, usernames)
 		usernames.each do |username|
 		begin
 		 	puts username
-		 	command = "curl --silent --output #{tmpdir}/#{username} http://www.boardgamegeek.com/xmlapi/collection/#{username}?own=1"
+		 	command = "curl --silent --output '#{tmpdir}/#{username}' http://www.boardgamegeek.com/xmlapi/collection/#{URI.escape(username)}?own=1"
 			`#{command}`
  			sleep(0.5)
 
@@ -45,7 +45,7 @@ def generateCSV(tmpdir, usernames)
 			all_titles = all_titles.merge(titles)
 			raise EmptyFileException if titles.length == 0
 
-		rescue EmptyFileException
+		rescue
 			puts "\nNo titles found for #{username}. Here's what was downloaded\n\n"
 			puts xml_data
 			puts
@@ -56,8 +56,6 @@ def generateCSV(tmpdir, usernames)
 			else
 				retry
 			end
-		rescue
-			abort "Invalid XML for user #{username}. Exiting."
 		end
 	end
 
