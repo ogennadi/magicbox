@@ -23,14 +23,16 @@ def generateCSV(tmpdir, usernames)
 	all_titles 			= {} # key: game id, value: game name
 	game_freq 			= {} # key: gamed id, value: ownership frequency
 	game_freq.default 	= 0
+	last_failed_user = nil
+	try_again = false
 
 	puts "Analyzing the collections:"
 		usernames.each do |username|
 		begin
 		 	puts username
+			sleep(0.5)
 		 	command = "curl --silent --output '#{tmpdir}/#{username}' http://www.boardgamegeek.com/xmlapi/collection/#{URI.escape(username)}?own=1"
 			`#{command}`
- 			sleep(0.5)
 
 			doc_name 	= "#{tmpdir}/#{username}"
 			xml_data 	= File.open(doc_name, 'rb').read
@@ -46,6 +48,15 @@ def generateCSV(tmpdir, usernames)
 			raise EmptyFileException if titles.length == 0
 
 		rescue
+			if (last_failed_user != username) && (last_failed_user != nil)
+				puts "*\tRetrying..."
+				sleep(2)
+				last_failed_user = username
+				retry
+			end
+
+			last_failed_user = username
+
 			puts "\nNo titles found for #{username}. Here's what was downloaded\n\n"
 			puts xml_data
 			puts
